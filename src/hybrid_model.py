@@ -5,7 +5,7 @@ from collections import Counter
 
 
 class HybridRecommender:
-    def __init__(self, cf_model, content_model, embedding_model, weights=(0.4, 0.3, 0.3)):
+    def __init__(self, cf_model, content_model, embedding_model, weights=(0.5, 0.2, 0.3)):
         """
         Initialize HybridRecommender with component models and their respective weights.
         """

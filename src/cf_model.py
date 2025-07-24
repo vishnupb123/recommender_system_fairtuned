@@ -7,7 +7,7 @@ from implicit.nearest_neighbours import bm25_weight
 import numpy as np
 
 class CFRecommender:
-    def __init__(self, factors=64, regularization=0.01, iterations=20):
+    def __init__(self, factors=128, regularization=0.01, iterations=20):
         self.model = AlternatingLeastSquares(
             factors=factors,
             regularization=regularization,
