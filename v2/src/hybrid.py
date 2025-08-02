@@ -763,7 +763,7 @@ class UltimateRecommendationPipeline:
 
 # Production demonstration
 if __name__ == '__main__':
-    PROCESSED_DATA_DIR = '/Users/vishnupb/Desktop/spotify_recommender/v3/processed'
+    PROCESSED_DATA_DIR = r'C:\source\Deep_Learning\recommender_system_fairtuned\v3\processed'
     
     logger.info("🏆 Initializing ULTIMATE Hybrid Recommendation System...")
     pipeline = UltimateRecommendationPipeline(PROCESSED_DATA_DIR)
