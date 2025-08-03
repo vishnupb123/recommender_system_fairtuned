@@ -29,7 +29,7 @@ class OptimizedSpotifyPreprocessor:
     
     def __init__(self, base_dir: str, output_dir: str = None, max_playlists: int = 80000):
         self.base_dir = base_dir
-        self.data_dir = os.path.join(base_dir, 'v2', 'data')  
+        self.data_dir = os.path.join(base_dir, 'data')
         self.output_dir = output_dir or os.path.join(base_dir, 'v3', 'processed')
         self.max_playlists = max_playlists
         
@@ -55,7 +55,7 @@ class OptimizedSpotifyPreprocessor:
     
     def load_playlists_efficiently(self) -> List[Dict]:
         """Load playlists with memory-efficient streaming"""
-        logger.info("🔄 Loading playlists with streaming approach...")
+        logger.info(" Loading playlists with streaming approach...")
         
         playlists = []
         track_counter = Counter()
@@ -91,7 +91,7 @@ class OptimizedSpotifyPreprocessor:
     
     def enhanced_stratified_sampling(self, playlists: List[Dict], track_counter: Counter) -> List[Dict]:
         """Enhanced stratified sampling with multiple criteria"""
-        logger.info("🎯 Performing enhanced stratified sampling...")
+        logger.info(" Performing enhanced stratified sampling...")
         
         # Categorize playlists by multiple dimensions
         playlist_categories = defaultdict(list)
@@ -169,7 +169,7 @@ class OptimizedSpotifyPreprocessor:
     
     def extract_and_normalize_data(self, playlists: List[Dict], track_counter: Counter) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Extract and normalize playlist and track data with enhanced features"""
-        logger.info("🔧 Extracting and normalizing data...")
+        logger.info(" Extracting and normalizing data...")
         
         playlist_records = []
         track_records = []
@@ -309,7 +309,7 @@ class OptimizedSpotifyPreprocessor:
     
     def build_enhanced_mappings(self, track_df: pd.DataFrame) -> Dict:
         """Build comprehensive mapping dictionaries"""
-        logger.info("🗺️ Building enhanced mappings...")
+        logger.info(" Building enhanced mappings...")
         
         # Core mappings
         unique_tracks = track_df['track_uri'].unique()
@@ -354,7 +354,7 @@ class OptimizedSpotifyPreprocessor:
     
     def build_optimized_matrices(self, track_df: pd.DataFrame, mappings: Dict) -> Tuple[csr_matrix, csr_matrix]:
         """Build interaction and feature matrices efficiently"""
-        logger.info("🔨 Building optimized sparse matrices...")
+        logger.info(" Building optimized sparse matrices...")
         
         # Build interaction matrix
         playlist_ids = [mappings['playlist2id'][pid] for pid in track_df['pid']]
@@ -382,7 +382,7 @@ class OptimizedSpotifyPreprocessor:
     
     def extract_enhanced_tfidf(self, track_df: pd.DataFrame) -> Tuple[csr_matrix, TfidfVectorizer]:
         """Extract simplified TF-IDF features for better performance"""
-        logger.info("📝 Extracting TF-IDF features...")
+        logger.info(" Extracting TF-IDF features...")
         
         # Simplified text combination - just track and artist names
         texts = []
@@ -411,7 +411,7 @@ class OptimizedSpotifyPreprocessor:
     
     def extract_enhanced_word2vec(self, track_df: pd.DataFrame) -> Tuple[np.ndarray, Word2Vec]:
         """Extract simplified Word2Vec embeddings for better performance"""
-        logger.info("🧠 Training simplified Word2Vec model...")
+        logger.info(" Training simplified Word2Vec model...")
         
         # Simplified corpus preparation
         corpus = []
@@ -474,7 +474,7 @@ class OptimizedSpotifyPreprocessor:
     
     def compute_enhanced_popularity(self, track_df: pd.DataFrame) -> Dict:
         """Compute simplified popularity metrics"""
-        logger.info("📊 Computing popularity metrics...")
+        logger.info("Computing popularity metrics...")
         
         popularity_metrics = {}
         
@@ -502,7 +502,7 @@ class OptimizedSpotifyPreprocessor:
                               embeddings: np.ndarray, word2vec_model: Word2Vec,
                               popularity_metrics: Dict):
         """Save all processed artifacts"""
-        logger.info(f"💾 Saving enhanced artifacts to {self.output_dir}...")
+        logger.info(f" Saving enhanced artifacts to {self.output_dir}...")
         
         os.makedirs(self.output_dir, exist_ok=True)
         
@@ -538,7 +538,7 @@ class OptimizedSpotifyPreprocessor:
         # Create summary report
         self._create_summary_report(playlist_df, track_df, mappings)
         
-        logger.info("✅ All artifacts saved successfully!")
+        logger.info(" All artifacts saved successfully!")
     
     def _create_summary_report(self, playlist_df: pd.DataFrame, track_df: pd.DataFrame, mappings: Dict):
         """Create a summary report of the preprocessing"""
@@ -566,11 +566,11 @@ class OptimizedSpotifyPreprocessor:
         with open(os.path.join(self.output_dir, 'summary_report.json'), 'w') as f:
             json.dump(summary, f, indent=2, default=str)
         
-        logger.info("📋 Summary report created")
+        logger.info(" Summary report created")
     
     def run_complete_pipeline(self):
         """Run the complete preprocessing pipeline"""
-        logger.info("🚀 Starting complete preprocessing pipeline...")
+        logger.info(" Starting complete preprocessing pipeline...")
         
         try:
             # Step 1: Load data
@@ -608,10 +608,10 @@ class OptimizedSpotifyPreprocessor:
                 popularity_metrics
             )
             
-            logger.info("🎉 Complete preprocessing pipeline finished successfully!")
+            logger.info(" Complete preprocessing pipeline finished successfully!")
             
         except Exception as e:
-            logger.error(f"❌ Pipeline failed: {e}")
+            logger.error(f" Pipeline failed: {e}")
             raise
 
 
@@ -635,4 +635,4 @@ if __name__ == '__main__':
     # Run complete pipeline
     preprocessor.run_complete_pipeline()
     
-    print("✅ Preprocessing complete! Ready for hybrid recommendation system.")
+    print(" Preprocessing complete! Ready for hybrid recommendation system.")
