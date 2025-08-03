@@ -1,0 +1,8 @@
+# Ignore data, models, notebooks, and src directories
+/data/
+/models/
+/notebooks/
+/src/
+/v3/
+/v3/processed/
+

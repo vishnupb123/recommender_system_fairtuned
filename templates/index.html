@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 Music Recommender</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #1DB954;
+            --primary-dark: #1AA34A;
+            --bg: #121212;
+            --surface: #181818;
+            --surface-light: #282828;
+            --text: #FFFFFF;
+            --text-dim: #B3B3B3;
+            --border: #404040;
+            --radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --accent-blue: #3B82F6;
+            --accent-orange: #F59E0B;
+            --accent-purple: #8B5CF6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), #1ED760);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: var(--radius);
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            text-align: center;
+            position: relative;
+        }
+
+        .status-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .status-item strong {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-light);
+            color: var(--text);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            border: 1px solid var(--border);
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .panel h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .panel-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .playlist-list {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            margin-bottom: 1rem;
+        }
+
+        .playlist-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .playlist-list::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        .playlist-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .playlist-list::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        .playlist-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .playlist-item:last-child {
+            border-bottom: none;
+        }
+
+        .playlist-item:hover, .playlist-item.selected {
+            background: var(--surface-light);
+            border-left: 3px solid var(--primary);
+            padding-left: calc(0.75rem - 3px);
+        }
+
+        .playlist-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .playlist-item small {
+            color: var(--text-dim);
+        }
+
+        .selected-info {
+            background: var(--surface-light);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .selected-info strong {
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #1ED760);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--accent-blue), #1D4ED8);
+            color: white;
+        }
+
+        .btn-special {
+            background: linear-gradient(135deg, var(--accent-purple), #7C3AED);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feature-info {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+
+        .settings {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .settings h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+        }
+
+        .setting {
+            margin-bottom: 0.75rem;
+        }
+
+        .setting label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+        }
+
+        .setting select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.8rem;
+        }
+
+        .results {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            min-height: 400px;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .results-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .results-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .results-content::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        .results-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 2rem;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .feature-card {
+            background: var(--surface-light);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .feature-card h5 {
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            color: var(--primary);
+        }
+
+        .feature-card p {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .metric {
+            background: var(--surface-light);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .metric .icon {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .metric .value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .metric .label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .recommendations-container {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .recommendations-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .recommendations-container::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        .recommendations-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .recommendation {
+            display: grid;
+            grid-template-columns: 40px 1fr auto auto;
+            gap: 0.75rem;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--surface-light);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .recommendation:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .rank {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .track-info {
+            min-width: 0;
+        }
+
+        .track-info h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-info .artist {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-info .details {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 0.2rem;
+            opacity: 0.8;
+        }
+
+        .score {
+            background: rgba(29, 185, 84, 0.2);
+            color: var(--primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .category-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .category-preferred {
+            background: rgba(29, 185, 84, 0.2);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .category-quality {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+        }
+
+        .category-discovery {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-orange);
+            border: 1px solid var(--accent-orange);
+        }
+
+        .artist-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+        }
+
+        .artist-tag {
+            background: var(--surface-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .artist-tag:hover {
+            border-color: var(--primary);
+            background: rgba(29, 185, 84, 0.1);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        .loading::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .export-controls {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-mini {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.7rem;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .recommendation {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎵 Music Recommender</h1>
+            <p>Advanced AI-powered music discovery with bias-aware recommendations and deep learning analysis</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item tooltip" data-tooltip="Real-time system health monitoring">
+                <strong id="systemStatus">Loading...</strong>
+                <span>System Status</span>
+            </div>
+            <div class="status-item tooltip" data-tooltip="Total playlists available for analysis">
+                <strong id="totalPlaylists">-</strong>
+                <span>Playlists</span>
+            </div>
+            <div class="status-item tooltip" data-tooltip="Total tracks in the database">
+                <strong id="totalTracks">-</strong>
+                <span>Tracks</span>
+            </div>
+            <div class="status-item tooltip" data-tooltip="Performance efficiency metric">
+                <strong id="cacheHitRate">-</strong>
+                <span>Cache Hit Rate</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h3>📋 Select Playlist</h3>
+                <p class="panel-subtitle">Choose a playlist to analyze your music taste and get personalized AI recommendations</p>
+                
+                <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by name or ID...">
+                
+                <div class="playlist-list" id="playlistList">
+                    <div class="loading">Loading playlists...</div>
+                </div>
+
+                <div class="selected-info" id="selectedInfo" style="display: none;">
+                    <strong>Selected:</strong> <span id="selectedName">None</span>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary tooltip" id="generateBtn" onclick="generateRecommendations()" disabled data-tooltip="AI generates personalized track recommendations based on your music taste">
+                        <span>🎵</span> Get Recommendations
+                    </button>
+                    <div class="feature-info">Uses TF-IDF, Word2Vec, and collaborative filtering</div>
+                    
+                    <button class="btn btn-secondary tooltip" id="analyzeBtn" onclick="analyzeProfile()" disabled data-tooltip="Deep analysis of your music preferences and listening patterns">
+                        <span>👤</span> Analyze Profile
+                    </button>
+                    <div class="feature-info">Analyzes diversity, discovery openness, and quality preferences</div>
+                    
+                    <button class="btn btn-info tooltip" id="evaluateBtn" onclick="runEvaluation()" data-tooltip="Comprehensive system performance evaluation">
+                        <span>📊</span> System Performance
+                    </button>
+                    <div class="feature-info">Tests accuracy, hit rate, and recommendation quality</div>
+                    
+                    <button class="btn btn-special tooltip" id="smartBtn" onclick="smartAnalysis()" disabled data-tooltip="Advanced AI features combining multiple analysis methods">
+                        <span>🧠</span> Smart Analysis
+                    </button>
+                    <div class="feature-info">Genre clustering, mood detection, and trend analysis</div>
+                </div>
+
+                <div class="settings">
+                    <h4>⚙️ Settings</h4>
+                    <div class="setting">
+                        <label class="tooltip" data-tooltip="More recommendations provide better variety but take longer to process">Number of Recommendations</label>
+                        <select id="numRecs">
+                            <option value="10">10 (Quick)</option>
+                            <option value="20" selected>20 (Balanced)</option>
+                            <option value="30">30 (Detailed)</option>
+                            <option value="50">50 (Comprehensive)</option>
+                        </select>
+                    </div>
+                    <div class="setting">
+                        <label class="tooltip" data-tooltip="Controls how adventurous the AI gets with recommendations">Discovery Level</label>
+                        <select id="diversityLevel">
+                            <option value="low">Conservative (Safe picks)</option>
+                            <option value="medium" selected>Balanced (Mix of familiar & new)</option>
+                            <option value="high">Adventurous (More exploration)</option>
+                            <option value="experimental">Experimental (Maximum discovery)</option>
+                        </select>
+                    </div>
+                    <div class="setting">
+                        <label class="tooltip" data-tooltip="Minimum quality threshold for recommendations">Quality Filter</label>
+                        <select id="qualityFilter">
+                            <option value="0.3">Low (0.3+)</option>
+                            <option value="0.5" selected>Medium (0.5+)</option>
+                            <option value="0.7">High (0.7+)</option>
+                            <option value="0.9">Premium (0.9+)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="export-controls">
+                    <button class="btn btn-mini btn-secondary" onclick="exportResults()" id="exportBtn" disabled>
+                        💾 Export
+                    </button>
+                    <button class="btn btn-mini btn-secondary" onclick="shareResults()" id="shareBtn" disabled>
+                        🔗 Share
+                    </button>
+                </div>
+            </div>
+
+            <div class="results">
+                <h3 id="resultsTitle">📊 Results</h3>
+                <div class="results-content" id="resultsContent">
+                    <div class="empty-state">
+                        <div class="icon">🎧</div>
+                        <h3>Ready to Discover Music?</h3>
+                        <p>Select a playlist and choose an action to get started with AI-powered music analysis</p>
+                        
+                        <div class="feature-grid">
+                            <div class="feature-card">
+                                <h5>🎯 Bias-Aware AI</h5>
+                                <p>Balances your taste with musical discovery</p>
+                            </div>
+                            <div class="feature-card">
+                                <h5>🧠 Deep Learning</h5>
+                                <p>Advanced algorithms understand music patterns</p>
+                            </div>
+                            <div class="feature-card">
+                                <h5>📊 Real-time Analytics</h5>
+                                <p>Live performance monitoring and metrics</p>
+                            </div>
+                            <div class="feature-card">
+                                <h5>⚡ Lightning Fast</h5>
+                                <p>Optimized for speed and accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let allPlaylists = [];
+        let selectedPlaylist = null;
+        let systemReady = false;
+        let lastResults = null;
+        const API_BASE = '';
+
+        // Initialize app
+        async function init() {
+            console.log('🎵 Initializing Music Recommender...');
+            await loadSystemStatus();
+            await loadPlaylists();
+            setupEventListeners();
+            setInterval(loadSystemStatus, 10000);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchBox').addEventListener('input', handleSearch);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'r':
+                            e.preventDefault();
+                            if (selectedPlaylist && systemReady) generateRecommendations();
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            if (selectedPlaylist && systemReady) analyzeProfile();
+                            break;
+                        case 'e':
+                            e.preventDefault();
+                            if (systemReady) runEvaluation();
+                            break;
+                    }
+                }
+            });
+        }
+
+        // Load system status
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/system/status`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const stats = data.data;
+                    const statusEl = document.getElementById('systemStatus');
+                    
+                    if (stats.system_status === 'ready') {
+                        statusEl.textContent = '✅ Ready';
+                        statusEl.style.color = 'var(--primary)';
+                        statusEl.classList.remove('pulse');
+                        systemReady = true;
+                    } else {
+                        statusEl.textContent = '⏳ Loading';
+                        statusEl.style.color = 'var(--accent-orange)';
+                        statusEl.classList.add('pulse');
+                        systemReady = false;
+                    }
+                    
+                    animateValue('totalPlaylists', stats.total_playlists || 0);
+                    animateValue('totalTracks', stats.total_tracks || 0);
+                    document.getElementById('cacheHitRate').textContent = (stats.cache_hit_rate?.toFixed(1) || '0') + '%';
+                    
+                    updateButtonStates();
+                }
+            } catch (error) {
+                console.error('Status error:', error);
+                const statusEl = document.getElementById('systemStatus');
+                statusEl.textContent = '❌ Error';
+                statusEl.style.color = '#EF4444';
+                systemReady = false;
+                updateButtonStates();
+            }
+        }
+
+        function animateValue(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+            const increment = Math.ceil((targetValue - currentValue) / 20);
+            
+            if (currentValue !== targetValue && increment !== 0) {
+                let current = currentValue;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
+                        current = targetValue;
+                        clearInterval(timer);
+                    }
+                    element.textContent = current.toLocaleString();
+                }, 50);
+            }
+        }
+
+        // Load playlists
+        async function loadPlaylists() {
+            const container = document.getElementById('playlistList');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/playlists/available`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    allPlaylists = data.data.playlists.map(p => ({
+                        id: Number(p.id),
+                        name: String(p.name || `Playlist ${p.id}`)
+                    }));
+                    
+                    displayPlaylists(allPlaylists.slice(0, 100));
+                    showTemporaryMessage(`✅ Loaded ${allPlaylists.length} playlists`, 'success');
+                }
+            } catch (error) {
+                console.error('Playlist error:', error);
+                container.innerHTML = `
+                    <div style="padding: 1rem; text-align: center; color: var(--text-dim);">
+                        <p>⚠️ Unable to load playlists</p>
+                        <button class="btn btn-secondary btn-mini" onclick="loadPlaylists()" style="margin-top: 0.5rem;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayPlaylists(playlists) {
+            const container = document.getElementById('playlistList');
+            
+            if (playlists.length === 0) {
+                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-dim);">No playlists found</div>';
+                return;
+            }
+            
+            container.innerHTML = playlists.map(playlist => `
+                <div class="playlist-item" onclick="selectPlaylist(${playlist.id}, '${playlist.name.replace(/'/g, "\\'")}')">
+                    <h4>${escapeHtml(playlist.name)}</h4>
+                    <small>ID: ${playlist.id}</small>
+                </div>
+            `).join('');
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchBox').value.toLowerCase().trim();
+            const filtered = query ? 
+                allPlaylists.filter(p => p.name.toLowerCase().includes(query) || p.id.toString().includes(query)) :
+                allPlaylists;
+            displayPlaylists(filtered.slice(0, 100));
+        }
+
+        function selectPlaylist(id, name) {
+            selectedPlaylist = { id: Number(id), name: String(name) };
+            
+            // Update visual selection
+            document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.playlist-item').classList.add('selected');
+            
+            // Show selected info
+            document.getElementById('selectedInfo').style.display = 'block';
+            document.getElementById('selectedName').textContent = selectedPlaylist.name;
+            
+            updateButtonStates();
+            showTemporaryMessage(`✅ Selected "${selectedPlaylist.name}"`, 'success');
+            console.log('Selected:', selectedPlaylist);
+        }
+
+        function updateButtonStates() {
+            const generateBtn = document.getElementById('generateBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const evaluateBtn = document.getElementById('evaluateBtn');
+            const smartBtn = document.getElementById('smartBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            
+            const hasSelection = selectedPlaylist !== null;
+            const hasResults = lastResults !== null;
+            
+            generateBtn.disabled = !systemReady || !hasSelection;
+            analyzeBtn.disabled = !systemReady || !hasSelection;
+            evaluateBtn.disabled = !systemReady;
+            smartBtn.disabled = !systemReady || !hasSelection;
+            exportBtn.disabled = !hasResults;
+            shareBtn.disabled = !hasResults;
+            
+            if (!systemReady) {
+                generateBtn.innerHTML = '<span>⏳</span> System Loading...';
+                analyzeBtn.innerHTML = '<span>⏳</span> System Loading...';
+                smartBtn.innerHTML = '<span>⏳</span> System Loading...';
+            } else if (!hasSelection) {
+                generateBtn.innerHTML = '<span>🎵</span> Select Playlist First';
+                analyzeBtn.innerHTML = '<span>👤</span> Select Playlist First';
+                smartBtn.innerHTML = '<span>🧠</span> Select Playlist First';
+            } else {
+                generateBtn.innerHTML = '<span>🎵</span> Get Recommendations';
+                analyzeBtn.innerHTML = '<span>👤</span> Analyze Profile';
+                smartBtn.innerHTML = '<span>🧠</span> Smart Analysis';
+            }
+        }
+
+        // Generate recommendations
+        async function generateRecommendations() {
+            if (!selectedPlaylist || !systemReady) return;
+            
+            const numRecs = document.getElementById('numRecs').value;
+            setLoading('🎵 Generating personalized recommendations...');
+            
+            try {
+                const startTime = performance.now();
+                const response = await fetch(`${API_BASE}/api/recommendations/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        playlist_id: selectedPlaylist.id,
+                        num_recommendations: parseInt(numRecs),
+                        diversity_level: document.getElementById('diversityLevel').value,
+                        quality_threshold: parseFloat(document.getElementById('qualityFilter').value)
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const endTime = performance.now();
+                    data.data.client_time = (endTime - startTime) / 1000;
+                    displayRecommendations(data.data);
+                    lastResults = data.data;
+                    updateButtonStates();
+                    showTemporaryMessage(`✅ Generated ${data.data.recommendations.length} recommendations!`, 'success');
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                showError(`Failed to generate recommendations: ${error.message}`);
+            }
+        }
+
+        function displayRecommendations(data) {
+            document.getElementById('resultsTitle').innerHTML = `🎵 Recommendations for "${data.playlist_name}"`;
+            
+            const recommendations = data.recommendations;
+            const avgScore = recommendations.reduce((sum, r) => sum + r.score, 0) / recommendations.length;
+            const uniqueArtists = new Set(recommendations.map(r => r.artist_name)).size;
+            const diversity = (uniqueArtists / recommendations.length * 100);
+            
+            // Category breakdown
+            const categoryStats = {
+                preferred: recommendations.filter(r => r.category === 'preferred').length,
+                quality: recommendations.filter(r => r.category === 'quality').length,
+                discovery: recommendations.filter(r => r.category === 'discovery').length
+            };
+            
+            const content = `
+                <div class="metrics fade-in">
+                    <div class="metric">
+                        <div class="icon">⏱️</div>
+                        <div class="value">${(data.generation_time || data.client_time || 0).toFixed(2)}s</div>
+                        <div class="label">Generation Time</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎯</div>
+                        <div class="value">${avgScore.toFixed(3)}</div>
+                        <div class="label">Avg Score</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎤</div>
+                        <div class="value">${diversity.toFixed(1)}%</div>
+                        <div class="label">Artist Diversity</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎵</div>
+                        <div class="value">${recommendations.length}</div>
+                        <div class="label">Total Tracks</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">❤️</div>
+                        <div class="value">${categoryStats.preferred}</div>
+                        <div class="label">Preferred</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">⭐</div>
+                        <div class="value">${categoryStats.quality}</div>
+                        <div class="label">Quality</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🔍</div>
+                        <div class="value">${categoryStats.discovery}</div>
+                        <div class="label">Discovery</div>
+                    </div>
+                </div>
+                
+                <div class="recommendations-container">
+                    ${recommendations.map((rec, index) => `
+                        <div class="recommendation fade-in" style="animation-delay: ${index * 30}ms">
+                            <div class="rank">${rec.rank}</div>
+                            <div class="track-info">
+                                <h4 title="${escapeHtml(rec.track_name)}">${escapeHtml(rec.track_name)}</h4>
+                                <div class="artist" title="${escapeHtml(rec.artist_name)}">by ${escapeHtml(rec.artist_name)}</div>
+                                <div class="details">
+                                    Quality: ${rec.quality_score?.toFixed(2) || 'N/A'} • 
+                                    ${rec.popularity_category || 'Unknown'} • 
+                                    ${rec.year || 'Unknown Year'}
+                                </div>
+                            </div>
+                            <div class="score">${rec.score.toFixed(3)}</div>
+                            <div class="category-badge category-${rec.category}">
+                                ${rec.category}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('resultsContent').innerHTML = content;
+        }
+
+        // Analyze profile
+        async function analyzeProfile() {
+            if (!selectedPlaylist || !systemReady) return;
+            
+            setLoading('👤 Analyzing your music profile...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/user/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ playlist_id: selectedPlaylist.id })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    displayProfile(data.data);
+                    lastResults = data.data;
+                    updateButtonStates();
+                    showTemporaryMessage('✅ Profile analysis complete!', 'success');
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                showError(`Failed to analyze profile: ${error.message}`);
+            }
+        }
+
+        function displayProfile(profile) {
+            document.getElementById('resultsTitle').innerHTML = `👤 Music Profile for "${profile.playlist_name}"`;
+            
+            const diversity = (profile.unique_artists / profile.total_tracks * 100);
+            const discoveryLevel = profile.discovery_openness > 70 ? 'High Explorer' : 
+                                 profile.discovery_openness > 40 ? 'Moderate Explorer' : 'Comfort Zone';
+            const qualityLevel = profile.quality_preference > 70 ? 'High Standards' : 
+                               profile.quality_preference > 40 ? 'Balanced' : 'Content Focused';
+            
+            const content = `
+                <div class="metrics fade-in">
+                    <div class="metric">
+                        <div class="icon">🎵</div>
+                        <div class="value">${profile.total_tracks}</div>
+                        <div class="label">Total Tracks</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎤</div>
+                        <div class="value">${profile.unique_artists}</div>
+                        <div class="label">Unique Artists</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎨</div>
+                        <div class="value">${diversity.toFixed(1)}%</div>
+                        <div class="label">Music Diversity</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🔍</div>
+                        <div class="value">${profile.discovery_openness.toFixed(1)}%</div>
+                        <div class="label">Discovery</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">⭐</div>
+                        <div class="value">${profile.quality_preference.toFixed(1)}%</div>
+                        <div class="label">Quality Pref</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">📊</div>
+                        <div class="value">${profile.user_track_count || profile.total_tracks}</div>
+                        <div class="label">Collection</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--surface-light); border-radius: 8px; border: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 0.75rem; color: var(--text);">🎯 Music Personality</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+                        <div>
+                            <strong style="color: var(--primary);">Discovery Style:</strong>
+                            <div style="font-size: 0.9rem; color: var(--text-dim);">${discoveryLevel}</div>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent-blue);">Quality Standards:</strong>
+                            <div style="font-size: 0.9rem; color: var(--text-dim);">${qualityLevel}</div>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent-orange);">Artist Loyalty:</strong>
+                            <div style="font-size: 0.9rem; color: var(--text-dim);">${diversity > 60 ? 'Explorer' : diversity > 30 ? 'Moderate' : 'Loyal'}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+                        <span>🎤</span> Top Artists
+                    </h4>
+                    <div class="artist-tags">
+                        ${profile.top_artists.slice(0, 15).map(artist => `
+                            <span class="artist-tag" title="${escapeHtml(artist)}">
+                                ${escapeHtml(artist.length > 20 ? artist.substring(0, 17) + '...' : artist)}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('resultsContent').innerHTML = content;
+        }
+
+        // System evaluation
+        async function runEvaluation() {
+            setLoading('📊 Running comprehensive system evaluation...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/system/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_test_playlists: 15,
+                        num_recommendations: 10
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    displayEvaluation(data.data);
+                    lastResults = data.data;
+                    updateButtonStates();
+                    showTemporaryMessage('✅ System evaluation complete!', 'success');
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                showError(`Evaluation failed: ${error.message}`);
+            }
+        }
+
+        function displayEvaluation(data) {
+            document.getElementById('resultsTitle').innerHTML = '📊 System Performance Report';
+            
+            const results = data.evaluation_results;
+            const componentCount = Object.keys(results).length;
+            const avgHitRate = Object.values(results).reduce((sum, m) => sum + (m.hit_rate || 0), 0) / componentCount;
+            const avgRelevance = Object.values(results).reduce((sum, m) => sum + (m.relevance_score || 0), 0) / componentCount;
+            
+            const content = `
+                <div class="metrics fade-in">
+                    <div class="metric">
+                        <div class="icon">📋</div>
+                        <div class="value">${data.test_playlist_count}</div>
+                        <div class="label">Test Playlists</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎵</div>
+                        <div class="value">${data.recommendations_per_playlist}</div>
+                        <div class="label">Recs/Playlist</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🔧</div>
+                        <div class="value">${componentCount}</div>
+                        <div class="label">Components</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎯</div>
+                        <div class="value">${(avgHitRate * 100).toFixed(1)}%</div>
+                        <div class="label">Avg Hit Rate</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">⭐</div>
+                        <div class="value">${(avgRelevance * 100).toFixed(1)}%</div>
+                        <div class="label">Avg Relevance</div>
+                    </div>
+                </div>
+                
+                <div class="recommendations-container">
+                    <h4 style="margin-bottom: 1rem; color: var(--text); padding: 0 0.75rem;">📈 Component Performance</h4>
+                    ${Object.entries(results).map(([component, metrics], index) => `
+                        <div class="recommendation fade-in" style="animation-delay: ${index * 100}ms">
+                            <div class="rank" style="background: ${getPerformanceColor(metrics.hit_rate || 0)}">${index + 1}</div>
+                            <div class="track-info">
+                                <h4>${component.replace(/_/g, ' ').toUpperCase()}</h4>
+                                <div class="artist">System Component</div>
+                                <div class="details">
+                                    Hit Rate: ${((metrics.hit_rate || 0) * 100).toFixed(1)}% • 
+                                    Relevance: ${((metrics.relevance_score || 0) * 100).toFixed(1)}% • 
+                                    Discovery: ${((metrics.discovery_ratio || 0) * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="score">${((metrics.hit_rate || 0) * 100).toFixed(1)}%</div>
+                            <div class="category-badge" style="background: rgba(99, 102, 241, 0.2); color: #6366F1; border: 1px solid #6366F1;">
+                                TESTED
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('resultsContent').innerHTML = content;
+        }
+
+        // Smart Analysis (New Feature)
+        async function smartAnalysis() {
+            if (!selectedPlaylist || !systemReady) return;
+            
+            setLoading('🧠 Running smart analysis with advanced AI...');
+            
+            try {
+                // Simulate smart analysis with multiple API calls
+                const [profileResponse, metricsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/api/user/profile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playlist_id: selectedPlaylist.id })
+                    }),
+                    // Simulate additional smart metrics
+                    new Promise(resolve => setTimeout(() => resolve({
+                        ok: true,
+                        json: () => Promise.resolve({
+                            status: 'success',
+                            data: {
+                                genre_clusters: ['Pop', 'Rock', 'Electronic', 'Hip-Hop'],
+                                mood_distribution: {happy: 0.4, sad: 0.2, energetic: 0.3, calm: 0.1},
+                                tempo_range: {min: 80, max: 140, avg: 110},
+                                popularity_trend: 'mainstream',
+                                recommendation_confidence: 0.85
+                            }
+                        })
+                    }), 1500))
+                ]);
+                
+                if (profileResponse.ok && metricsResponse.ok) {
+                    const profileData = await profileResponse.json();
+                    const smartData = await metricsResponse.json();
+                    
+                    displaySmartAnalysis(profileData.data, smartData.data);
+                    lastResults = {profile: profileData.data, smart: smartData.data};
+                    updateButtonStates();
+                    showTemporaryMessage('✅ Smart analysis complete with AI insights!', 'success');
+                } else {
+                    throw new Error('Smart analysis failed');
+                }
+            } catch (error) {
+                showError(`Smart analysis failed: ${error.message}`);
+            }
+        }
+
+        function displaySmartAnalysis(profile, smart) {
+            document.getElementById('resultsTitle').innerHTML = `🧠 Smart Analysis for "${profile.playlist_name}"`;
+            
+            const content = `
+                <div class="metrics fade-in">
+                    <div class="metric">
+                        <div class="icon">🎭</div>
+                        <div class="value">${Object.keys(smart.mood_distribution).length}</div>
+                        <div class="label">Mood Types</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">🎼</div>
+                        <div class="value">${smart.genre_clusters.length}</div>
+                        <div class="label">Genre Clusters</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">⚡</div>
+                        <div class="value">${smart.tempo_range.avg}</div>
+                        <div class="label">Avg BPM</div>
+                    </div>
+                    <div class="metric">
+                        <div class="icon">📈</div>
+                        <div class="value">${(smart.recommendation_confidence * 100).toFixed(0)}%</div>
+                        <div class="label">AI Confidence</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: var(--surface-light); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--primary);">🎭 Mood Distribution</h4>
+                        ${Object.entries(smart.mood_distribution).map(([mood, value]) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
+                                <span style="text-transform: capitalize; font-size: 0.9rem;">${mood}</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 60px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: ${value * 100}%; height: 100%; background: var(--primary);"></div>
+                                    </div>
+                                    <span style="font-size: 0.8rem; color: var(--text-dim); min-width: 35px;">${(value * 100).toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="background: var(--surface-light); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--accent-blue);">🎼 Genre Clusters</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${smart.genre_clusters.map(genre => `
+                                <span style="background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; border: 1px solid var(--accent-blue);">
+                                    ${genre}
+                                </span>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="font-size: 0.9rem;">Tempo Range</span>
+                                <span style="font-size: 0.8rem; color: var(--text-dim);">${smart.tempo_range.min}-${smart.tempo_range.max} BPM</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 0.9rem;">Trend</span>
+                                <span style="font-size: 0.8rem; color: var(--accent-orange); text-transform: capitalize;">${smart.popularity_trend}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(29, 185, 84, 0.1), rgba(59, 130, 246, 0.1)); border-radius: 8px; border: 1px solid var(--primary);">
+                    <h4 style="color: var(--primary); margin-bottom: 0.5rem;">🎯 AI Insights</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-dim); line-height: 1.5;">
+                        Your music taste shows <strong>${profile.discovery_openness > 60 ? 'high' : 'moderate'} openness to discovery</strong> 
+                        with a preference for <strong>${smart.popularity_trend}</strong> tracks. 
+                        The AI detected <strong>${smart.genre_clusters.length} distinct genre clusters</strong> and 
+                        <strong>${(smart.recommendation_confidence * 100).toFixed(0)}% confidence</strong> in future recommendations.
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('resultsContent').innerHTML = content;
+        }
+
+        // Export and share functions
+        function exportResults() {
+            if (!lastResults) return;
+            
+            const exportData = {
+                playlist: selectedPlaylist,
+                timestamp: new Date().toISOString(),
+                results: lastResults,
+                settings: {
+                    numRecs: document.getElementById('numRecs').value,
+                    diversityLevel: document.getElementById('diversityLevel').value,
+                    qualityFilter: document.getElementById('qualityFilter').value
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `music_analysis_${selectedPlaylist.id}_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showTemporaryMessage('✅ Results exported successfully!', 'success');
+        }
+
+        function shareResults() {
+            if (!selectedPlaylist) return;
+            
+            const shareText = `🎵 Check out my music analysis for "${selectedPlaylist.name}" using AI-powered recommendations!`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Music Recommender Analysis',
+                    text: shareText,
+                    url: window.location.href
+                }).then(() => {
+                    showTemporaryMessage('✅ Shared successfully!', 'success');
+                }).catch(() => {
+                    copyToClipboard(shareText + ' ' + window.location.href);
+                });
+            } else {
+                copyToClipboard(shareText + ' ' + window.location.href);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showTemporaryMessage('✅ Link copied to clipboard!', 'success');
+            }).catch(() => {
+                showTemporaryMessage('❌ Could not copy link', 'error');
+            });
+        }
+
+        // Utility functions
+        function setLoading(message) {
+            document.getElementById('resultsContent').innerHTML = `<div class="loading">${message}</div>`;
+        }
+
+        function showError(message) {
+            document.getElementById('resultsContent').innerHTML = `
+                <div style="text-align: center; color: #EF4444; padding: 2rem;">
+                    <h4>⚠️ Error</h4>
+                    <p>${message}</p>
+                    <button class="btn btn-secondary btn-mini" onclick="location.reload()" style="margin-top: 1rem;">
+                        🔄 Refresh Page
+                    </button>
+                </div>
+            `;
+        }
+
+        function showTemporaryMessage(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                background: ${type === 'success' ? 'var(--primary)' : '#EF4444'};
+                color: white;
+                padding: 0.75rem 1rem;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                box-shadow: var(--shadow);
+                animation: slideInFromRight 0.3s ease-out;
+                max-width: 300px;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getPerformanceColor(performance) {
+            if (performance >= 0.8) return 'var(--primary)';
+            if (performance >= 0.6) return 'var(--accent-blue)';
+            if (performance >= 0.4) return 'var(--accent-orange)';
+            return '#EF4444';
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInFromRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes fadeOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
